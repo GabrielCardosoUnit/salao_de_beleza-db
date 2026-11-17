@@ -140,6 +140,60 @@ SELECT pg_temp.confere('competência = 2026-11-01',
        JOIN agendamento a ON a.id_agendamento = i.id_agendamento
       WHERE a.observacao = 'teste-1'));
 
+-- Comissão: casos de borda
+CREATE TEMP VIEW com_t1 AS
+SELECT c.* FROM comissao c
+JOIN item_agendamento i ON i.id_item = c.id_item
+JOIN agendamento a ON a.id_agendamento = i.id_agendamento
+WHERE a.observacao = 'teste-1';
+
+SELECT pg_temp.espera_erro('concluído não aceita alterar valor do item',
+    $$UPDATE item_agendamento SET valor_cobrado = 99
+      WHERE id_agendamento = (SELECT id_agendamento FROM agendamento WHERE observacao = 'teste-1')$$);
+SELECT pg_temp.espera_erro('concluído não aceita excluir item',
+    $$DELETE FROM item_agendamento
+      WHERE id_agendamento = (SELECT id_agendamento FROM agendamento WHERE observacao = 'teste-1')$$);
+SELECT pg_temp.espera_erro('agendamento não pode ser criado já CONCLUIDO',
+    $$INSERT INTO agendamento (id_cliente, id_profissional, inicio, fim, status)
+      SELECT cli, prof, '2026-11-17 14:00', '2026-11-17 14:30', 'CONCLUIDO' FROM t$$);
+SELECT pg_temp.espera_erro('não conclui agendamento sem serviços',
+    $$UPDATE agendamento SET status = 'CONCLUIDO' WHERE observacao = 'teste-reuso'$$);
+SELECT pg_temp.espera_erro('concluído não troca de horário',
+    $$UPDATE agendamento SET inicio = '2026-11-17 15:00', fim = '2026-11-17 16:15'
+      WHERE observacao = 'teste-1'$$);
+SELECT pg_temp.espera_erro('concluído não troca de profissional',
+    $$UPDATE agendamento SET id_profissional = (SELECT inativo FROM t)
+      WHERE observacao = 'teste-1'$$);
+UPDATE agendamento SET observacao = 'teste-1' WHERE observacao = 'teste-1';
+SELECT pg_temp.confere('concluído ainda aceita alterar outros campos', TRUE);
+
+-- Reabrir apaga as comissões não pagas
+UPDATE agendamento SET status = 'CONFIRMADO' WHERE observacao = 'teste-1';
+SELECT pg_temp.confere('reabrir apaga as comissões não pagas',
+    (SELECT count(*) FROM com_t1) = 0);
+
+-- Corrigir o valor e concluir de novo gera a comissão com o valor novo
+UPDATE item_agendamento SET valor_cobrado = 45
+WHERE id_agendamento = (SELECT id_agendamento FROM agendamento WHERE observacao = 'teste-1')
+  AND id_servico = (SELECT escova FROM t);
+UPDATE agendamento SET status = 'CONCLUIDO' WHERE observacao = 'teste-1';
+SELECT pg_temp.confere('reconcluir gera comissão nova: 30% de 45 = 13,50',
+    (SELECT array_agg(valor ORDER BY valor) FROM com_t1) = ARRAY[13.50, 20.00]::numeric[]);
+
+-- Comissão paga trava a reabertura
+UPDATE comissao SET paga = TRUE WHERE id_comissao IN (SELECT id_comissao FROM com_t1);
+SELECT pg_temp.espera_erro('não reabre agendamento com comissão paga',
+    $$UPDATE agendamento SET status = 'CANCELADO' WHERE observacao = 'teste-1'$$);
+
+-- Serviço sem percentual cadastrado bloqueia a conclusão
+INSERT INTO agendamento (id_cliente, id_profissional, inicio, fim, observacao)
+SELECT cli, prof, '2026-11-17 13:00', '2026-11-17 13:30', 'teste-sem-pct' FROM t;
+INSERT INTO item_agendamento (id_agendamento, id_servico, valor_cobrado)
+SELECT a.id_agendamento, t.corte, NULL FROM agendamento a, t WHERE a.observacao = 'teste-sem-pct';
+DELETE FROM profissional_servico WHERE id_servico = (SELECT corte FROM t);
+SELECT pg_temp.espera_erro('não conclui serviço sem percentual de comissão',
+    $$UPDATE agendamento SET status = 'CONCLUIDO' WHERE observacao = 'teste-sem-pct'$$);
+
 \echo '>>> TODOS OS TESTES PASSARAM <<<'
 
 ROLLBACK;
