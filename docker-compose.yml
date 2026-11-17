@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: salao_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: salao123
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+      - dados_salao:/var/lib/postgresql/data
+
+volumes:
+  dados_salao:
