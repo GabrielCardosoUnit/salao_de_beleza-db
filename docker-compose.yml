@@ -4,14 +4,18 @@ services:
     env_file:
       - .env
     environment:
-      POSTGRES_DB: salao_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: salao123
+      PGUSER: ${POSTGRES_USER}
+      PGDATABASE: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
       - ./sql:/docker-entrypoint-initdb.d
       - dados_salao:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
   dados_salao:
