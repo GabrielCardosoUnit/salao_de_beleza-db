@@ -34,6 +34,26 @@ docker compose exec db psql -f /docker-entrypoint-initdb.d/07_testes.sql
 
 Se tudo estiver certo, a saída termina com `>>> TODOS OS TESTES PASSARAM <<<`. Se alguma regra falhar, a execução para com `FALHOU: <nome do teste>`.
 
+### Testes em Java (T5-T9)
+
+Os arquivos `tests/teste05.java` a `tests/teste09.java` testam as regras no PostgreSQL do docker-compose via JDBC. Eles usam o helper `tests/Db.java`, que lê as credenciais do `.env`. Cada teste cria a própria massa de dados dentro de uma transação desfeita no final (ROLLBACK). Por isso não deixa dados no banco e não altera os dados de exemplo.
+
+Requisitos: Java 22+ (execução direta de vários arquivos `.java`) e o driver em `lib/postgresql-42.7.4.jar`.
+
+Com o banco no ar (`docker compose up -d`), na raiz do projeto:
+
+```bash
+java -cp lib/postgresql-42.7.4.jar tests/teste05.java
+```
+
+Para rodar todos (PowerShell):
+
+```powershell
+5..9 | ForEach-Object { java -cp lib/postgresql-42.7.4.jar "tests/teste0$_.java" }
+```
+
+Cada verificação imprime `[OK]` ou `[FALHA]`, e o processo sai com código 1 se houver falha. Quando o banco aceita algo que talvez devesse bloquear, o teste imprime `[AVISO]`, que não conta como falha. Para usar outro host ou porta, defina `DB_HOST` e `DB_PORT`; variáveis de ambiente têm prioridade sobre o `.env`.
+
 Para abrir o terminal do banco:
 
 ```bash
@@ -50,12 +70,15 @@ docker compose exec db psql
 | `sql/05_dados.sql`     | Dados de exemplo                                                                     |
 | `sql/06_consultas.sql` | Consultas                                                                            |
 | `sql/07_testes.sql`    | Testes das regras                                                                    |
+| `tests/Db.java`        | Helper JDBC dos testes em Java (conexão, massa de teste, verificações)              |
+| `tests/teste0X.java`   | Testes T5-T9 contra o banco real                                                     |
+| `lib/`                 | Driver JDBC do PostgreSQL                                                            |
 | `docs/der.md`          | Diagrama entidade-relacionamento (Mermaid, renderizado pelo GitHub)                  |
 
 ## Regras de negócio
 
 - **Sem conflito de horário:** um profissional não pode ter dois agendamentos sobrepostos (`EXCLUDE USING gist`). Agendamentos cancelados não contam, e horários encostados (10h–11h e 11h–12h) são permitidos.
-- **Status:** `AGENDADO`, `CONFIRMADO`, `CONCLUIDO` ou `CANCELADO`.
+- **Status:** `AGENDADO`, `CONFIRMADO`, `CONCLUIDO` ou `CANCELADO`. Um agendamento `CANCELADO` não pode ir direto para `CONCLUIDO`: é preciso reabri-lo antes.
 - **Expediente:** o agendamento precisa estar dentro do `horario_trabalho` do profissional naquele dia da semana (0 = domingo … 6 = sábado), no mesmo dia, e o profissional precisa estar ativo.
 - **Serviço x profissional:** só é possível lançar um serviço que o profissional realiza (`profissional_servico`).
 - **Fim do agendamento:** recalculado automaticamente como `inicio + soma das durações` dos serviços lançados.
