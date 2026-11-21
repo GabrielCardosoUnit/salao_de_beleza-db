@@ -34,6 +34,23 @@ docker compose exec db psql -f /docker-entrypoint-initdb.d/07_testes.sql
 
 Se tudo estiver certo, a saída termina com `>>> TODOS OS TESTES PASSARAM <<<`. Se alguma regra falhar, a execução para com `FALHOU: <nome do teste>`.
 
+### Testes dos índices
+
+O `sql/08_teste_indices.sql` confere os índices de `sql/03_indices.sql`:
+
+- **Estrutura:** tabela, colunas e ordem, `UNIQUE` e o filtro do índice parcial.
+- **Uso:** cada índice consegue atender à consulta para a qual foi criado. A consulta é analisada com `EXPLAIN`, com o Seq Scan desligado e os outros índices da tabela escondidos, então o resultado não depende do volume de dados.
+- **E-mail único:** maiúsculas não importam e vários `NULL` são permitidos.
+- **Chaves estrangeiras:** toda FK tem um índice que começa pela coluna dela.
+
+Índices redundantes aparecem como `AVISO`, que não conta como falha. Ele também roda na criação do banco e é desfeito no final (ROLLBACK). Para rodar de novo:
+
+```bash
+docker compose exec db psql -f /docker-entrypoint-initdb.d/08_teste_indices.sql
+```
+
+A saída termina com `>>> TODOS OS TESTES DE ÍNDICES PASSARAM <<<`.
+
 ### Testes em Java (T1-T9)
 
 Os arquivos `tests/teste01.java` a `tests/teste09.java` testam as regras no PostgreSQL do docker-compose via JDBC. Eles usam o helper `tests/Db.java`, que lê as credenciais do `.env`. Cada teste cria a própria massa de dados dentro de uma transação desfeita no final (ROLLBACK). Por isso não deixa dados no banco e não altera os dados de exemplo.
@@ -71,6 +88,7 @@ docker compose exec db psql
 | `sql/05_dados.sql`     | Dados de exemplo                                                                              |
 | `sql/06_consultas.sql` | 13 consultas (agenda do dia, histórico, faturamento, rankings, comissões, horários livres) |
 | `sql/07_testes.sql`    | Testes das regras                                                                             |
+| `sql/08_teste_indices.sql` | Testes dos índices (estrutura, uso pelo planner, e-mail único, FKs indexadas)             |
 | `tests/Db.java`        | Helper JDBC dos testes em Java (conexão, massa de teste, verificações)                     |
 | `tests/teste0X.java`   | Testes T1-T9 contra o banco real                                                              |
 | `lib/`                 | Driver JDBC do PostgreSQL                                                                     |

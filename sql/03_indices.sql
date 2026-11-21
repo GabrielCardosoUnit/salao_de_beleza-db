@@ -22,8 +22,9 @@ WHERE
     status IN ('AGENDADO', 'CONFIRMADO');
 
 -- Chaves estrangeiras
-CREATE INDEX idx_item_agendamento ON item_agendamento (id_agendamento);
-
+-- (item_agendamento.id_agendamento não precisa de índice próprio: o
+--  UNIQUE (id_agendamento, id_servico) do schema já cria um índice que
+--  começa por essa coluna e atende às mesmas consultas)
 CREATE INDEX idx_item_servico ON item_agendamento (id_servico);
 
 CREATE INDEX idx_ps_servico ON profissional_servico (id_servico);
