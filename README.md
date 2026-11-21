@@ -67,6 +67,7 @@ docker compose exec db psql
 | `sql/01_schema.sql`    | Tabelas, PK, FK, CHECKs e a regra anti-conflito de horário                          |
 | `sql/02_triggers.sql`  | Regras de negócio (expediente, serviço x profissional, cálculo do fim, comissão) |
 | `sql/03_indices.sql`   | Índices das FKs e e-mail único sem diferenciar maiúsculas                         |
+| `sql/04_views.sql`     | Views: agenda, comissão por profissional/mês, faturamento mensal e expediente       |
 | `sql/05_dados.sql`     | Dados de exemplo                                                                     |
 | `sql/06_consultas.sql` | Consultas                                                                            |
 | `sql/07_testes.sql`    | Testes das regras                                                                    |
