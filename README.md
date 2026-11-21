@@ -69,7 +69,7 @@ docker compose exec db psql
 | `sql/03_indices.sql`   | Índices das FKs e e-mail único sem diferenciar maiúsculas                         |
 | `sql/04_views.sql`     | Views: agenda, comissão por profissional/mês, faturamento mensal e expediente       |
 | `sql/05_dados.sql`     | Dados de exemplo                                                                     |
-| `sql/06_consultas.sql` | Consultas                                                                            |
+| `sql/06_consultas.sql` | 13 consultas (agenda do dia, histórico, faturamento, rankings, comissões, horários livres) |
 | `sql/07_testes.sql`    | Testes das regras                                                                    |
 | `tests/Db.java`        | Helper JDBC dos testes em Java (conexão, massa de teste, verificações)              |
 | `tests/teste0X.java`   | Testes T1-T9 contra o banco real                                                     |
