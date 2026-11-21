@@ -1,4 +1,4 @@
-# salao_de_beleza-banco_de_dados
+# Salao de Beleza - Banco de Dados
 
 Banco de dados PostgreSQL 17 para um salão de beleza: clientes, profissionais, serviços, agendamentos e comissões.
 
@@ -62,19 +62,19 @@ docker compose exec db psql
 
 ## Estrutura
 
-| Arquivo                  | Conteúdo                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------ |
-| `sql/01_schema.sql`    | Tabelas, PK, FK, CHECKs e a regra anti-conflito de horário                          |
-| `sql/02_triggers.sql`  | Regras de negócio (expediente, serviço x profissional, cálculo do fim, comissão) |
-| `sql/03_indices.sql`   | Índices das FKs e e-mail único sem diferenciar maiúsculas                         |
-| `sql/04_views.sql`     | Views: agenda, comissão por profissional/mês, faturamento mensal e expediente       |
-| `sql/05_dados.sql`     | Dados de exemplo                                                                     |
+| Arquivo                  | Conteúdo                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------- |
+| `sql/01_schema.sql`    | Tabelas, PK, FK, CHECKs e a regra anti-conflito de horário                                   |
+| `sql/02_triggers.sql`  | Regras de negócio (expediente, serviço x profissional, cálculo do fim, comissão)          |
+| `sql/03_indices.sql`   | Índices das FKs e e-mail único sem diferenciar maiúsculas                                  |
+| `sql/04_views.sql`     | Views: agenda, comissão por profissional/mês, faturamento mensal e expediente               |
+| `sql/05_dados.sql`     | Dados de exemplo                                                                              |
 | `sql/06_consultas.sql` | 13 consultas (agenda do dia, histórico, faturamento, rankings, comissões, horários livres) |
-| `sql/07_testes.sql`    | Testes das regras                                                                    |
-| `tests/Db.java`        | Helper JDBC dos testes em Java (conexão, massa de teste, verificações)              |
-| `tests/teste0X.java`   | Testes T1-T9 contra o banco real                                                     |
-| `lib/`                 | Driver JDBC do PostgreSQL                                                            |
-| `docs/der.md`          | Diagrama entidade-relacionamento (Mermaid, renderizado pelo GitHub)                  |
+| `sql/07_testes.sql`    | Testes das regras                                                                             |
+| `tests/Db.java`        | Helper JDBC dos testes em Java (conexão, massa de teste, verificações)                     |
+| `tests/teste0X.java`   | Testes T1-T9 contra o banco real                                                              |
+| `lib/`                 | Driver JDBC do PostgreSQL                                                                     |
+| `docs/der.md`          | Diagrama entidade-relacionamento (Mermaid, renderizado pelo GitHub)                           |
 
 ## Regras de negócio
 
