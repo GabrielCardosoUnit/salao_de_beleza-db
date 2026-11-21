@@ -1,71 +1,25 @@
+// T4 - Validar agendamento com cliente inexistente
+// Teste COM banco de dados: FK agendamento.id_cliente -> cliente
+// (sql/01_schema.sql). Tudo é desfeito no final (ROLLBACK).
+// Execução: java -cp lib/postgresql-42.7.4.jar tests/teste04.java
+public class teste04 extends Db {
 
-import java.util.HashSet;
-import java.util.Set;
-
-public class teste04 {
-
-    static Set<Integer> clientesExistentes = new HashSet<>();
-
-    static int ok = 0;
-    static int falhas = 0;
-
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws Exception {
         System.out.println("T4 - Validar agendamento com cliente inexistente");
+        conectar();
 
-        // Simula clientes cadastrados
-        clientesExistentes.add(1);
-        clientesExistentes.add(2);
+        long ana = profissional("Ana");
+        long corte = servico("Corte", "50.00", 30);
+        habilita(ana, corte, "40.00");
+        long cli = cliente("C1");
+        long inexistente = contar("SELECT COALESCE(MAX(id_cliente), 0) + 1000 FROM cliente");
 
-        // Cliente existente deve permitir agendamento
-        verifica("Agendamento com cliente existente e aceito",
-                !lanca(() -> agendar(1)));
-
-        // Cliente inexistente deve impedir agendamento
-        verifica("Agendamento com cliente inexistente e rejeitado",
-                lanca(() -> agendar(999999)));
-
+        verifica("Agendamento com cliente existente é aceito",
+                !lanca(() -> agendar(cli, ana, "2026-11-20 10:00", corte)));
+        verifica("Agendamento com cliente inexistente é rejeitado",
+                lanca(() -> agendar(inexistente, ana, "2026-11-20 14:00", corte)));
+        verifica("Nenhum agendamento foi gravado para o cliente inexistente",
+                contar("SELECT COUNT(*) FROM agendamento WHERE id_cliente = ?", inexistente) == 0);
         fim();
-    }
-
-    static void agendar(int idCliente) {
-
-        if (!clientesExistentes.contains(idCliente)) {
-            throw new IllegalStateException(
-                    "Cliente nao encontrado"
-            );
-        }
-    }
-
-    static void verifica(String descricao, boolean condicao) {
-        if (condicao) {
-            ok++;
-            System.out.println("  [OK] " + descricao);
-        } else {
-            falhas++;
-            System.out.println("  [FALHA] " + descricao);
-        }
-    }
-
-    static boolean lanca(Runnable acao) {
-        try {
-            acao.run();
-            return false;
-        } catch (IllegalStateException e) {
-            System.out.println(
-                    "  (erro esperado: " + e.getMessage() + ")"
-            );
-            return true;
-        }
-    }
-
-    static void fim() {
-        System.out.println(
-                "\nResultado: " + ok + " ok, " + falhas + " falha(s)"
-        );
-
-        if (falhas > 0) {
-            System.exit(1);
-        }
     }
 }

@@ -1,71 +1,30 @@
+// T3 - Validar telefone duplicado
+// Teste COM banco de dados: cliente.telefone é UNIQUE (sql/01_schema.sql).
+// Tudo é desfeito no final (ROLLBACK).
+// Execução: java -cp lib/postgresql-42.7.4.jar tests/teste03.java
+import java.sql.SQLException;
 
-import java.util.HashSet;
-import java.util.Set;
+public class teste03 extends Db {
 
-public class teste03 {
-
-    static Set<String> telefones = new HashSet<>();
-
-    static int ok = 0;
-    static int falhas = 0;
-
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws Exception {
         System.out.println("T3 - Validar telefone duplicado");
+        conectar();
 
-        // Primeiro telefone deve ser aceito
-        verifica("Primeiro telefone e aceito",
-                !lanca(() -> cadastrarCliente("79999999999")));
-
-        // Telefone diferente deve ser aceito
-        verifica("Telefone diferente e aceito",
-                !lanca(() -> cadastrarCliente("79888888888")));
-
-        // Telefone repetido deve ser rejeitado
-        verifica("Telefone duplicado e rejeitado",
-                lanca(() -> cadastrarCliente("79999999999")));
-
+        verifica("Primeiro telefone é aceito",
+                !lanca(() -> cadastrarCliente("Ana", "79999999999")));
+        verifica("Telefone diferente é aceito",
+                !lanca(() -> cadastrarCliente("Bruno", "79888888888")));
+        verifica("Telefone duplicado é rejeitado",
+                lanca(() -> cadastrarCliente("Carla", "79999999999")));
+        verifica("Telefone de um cliente já existente nos dados de exemplo é rejeitado",
+                lanca(() -> cadastrarCliente("Daniel",
+                        texto("SELECT telefone FROM cliente WHERE nome NOT LIKE 'Teste %' LIMIT 1"))));
+        verifica("Só os 2 clientes válidos foram gravados",
+                contar("SELECT COUNT(*) FROM cliente WHERE telefone IN ('79999999999', '79888888888')") == 2);
         fim();
     }
 
-    static void cadastrarCliente(String telefone) {
-
-        if (!telefones.add(telefone)) {
-            throw new IllegalStateException(
-                    "Telefone ja cadastrado"
-            );
-        }
-    }
-
-    static void verifica(String descricao, boolean condicao) {
-        if (condicao) {
-            ok++;
-            System.out.println("  [OK] " + descricao);
-        } else {
-            falhas++;
-            System.out.println("  [FALHA] " + descricao);
-        }
-    }
-
-    static boolean lanca(Runnable acao) {
-        try {
-            acao.run();
-            return false;
-        } catch (IllegalStateException e) {
-            System.out.println(
-                    "  (erro esperado: " + e.getMessage() + ")"
-            );
-            return true;
-        }
-    }
-
-    static void fim() {
-        System.out.println(
-                "\nResultado: " + ok + " ok, " + falhas + " falha(s)"
-        );
-
-        if (falhas > 0) {
-            System.exit(1);
-        }
+    static void cadastrarCliente(String nome, String telefone) throws SQLException {
+        executar("INSERT INTO cliente (nome, telefone) VALUES (?, ?)", "Teste " + nome, telefone);
     }
 }

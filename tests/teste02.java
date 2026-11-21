@@ -1,85 +1,26 @@
+// T2 - Validar preço negativo e percentual de comissão
+// Teste COM banco de dados: CHECKs ck_serv_preco (servico) e ck_ps_pct
+// (profissional_servico) em sql/01_schema.sql. Tudo é desfeito no final (ROLLBACK).
+// Execução: java -cp lib/postgresql-42.7.4.jar tests/teste02.java
+public class teste02 extends Db {
 
-import java.math.BigDecimal;
+    public static void main(String[] args) throws Exception {
+        System.out.println("T2 - Validar preço negativo e percentual de comissão");
+        conectar();
 
-public class teste02 {
+        // Preço do serviço (ck_serv_preco: preco >= 0)
+        verifica("Preço positivo é aceito", !lanca(() -> servico("Corte", "50.00", 30)));
+        verifica("Preço zero é aceito (serviço gratuito)", !lanca(() -> servico("Cortesia", "0.00", 30)));
+        verifica("Preço negativo é rejeitado", lanca(() -> servico("Negativo", "-50.00", 30)));
 
-    public static void main(String[] args) {
-
-        System.out.println("T2 - Validar preco negativo e comissao");
-
-        // Preco positivo deve ser aceito
-        verifica("Preco positivo e aceito",
-                !lanca(() -> validarPreco("50.00")));
-
-        // Preco negativo deve ser rejeitado
-        verifica("Preco negativo e rejeitado",
-                lanca(() -> validarPreco("-50.00")));
-
-        // Comissao de 50% deve ser aceita
-        verifica("Comissao de 50% e aceita",
-                !lanca(() -> validarComissao("50.00")));
-
-        // Comissao de 150% deve ser rejeitada
-        verifica("Comissao de 150% e rejeitada",
-                lanca(() -> validarComissao("150.00")));
-
+        // Percentual de comissão (ck_ps_pct: entre 0 e 100)
+        long prof = profissional("Ana");
+        long s1 = servico("S1", "50.00", 30), s2 = servico("S2", "50.00", 30),
+             s3 = servico("S3", "50.00", 30), s4 = servico("S4", "50.00", 30);
+        verifica("Comissão de 50% é aceita", !lanca(() -> habilita(prof, s1, "50.00")));
+        verifica("Comissão de 100% é aceita (limite)", !lanca(() -> habilita(prof, s2, "100.00")));
+        verifica("Comissão de 150% é rejeitada", lanca(() -> habilita(prof, s3, "150.00")));
+        verifica("Comissão negativa é rejeitada", lanca(() -> habilita(prof, s4, "-1.00")));
         fim();
-    }
-
-    static void validarPreco(String valor) {
-        BigDecimal preco = new BigDecimal(valor);
-
-        if (preco.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalStateException(
-                    "O preco nao pode ser negativo"
-            );
-        }
-    }
-
-    static void validarComissao(String valor) {
-        BigDecimal comissao = new BigDecimal(valor);
-
-        if (comissao.compareTo(BigDecimal.ZERO) < 0 ||
-            comissao.compareTo(new BigDecimal("100")) > 0) {
-
-            throw new IllegalStateException(
-                    "A comissao deve estar entre 0 e 100%"
-            );
-        }
-    }
-
-    static int ok = 0;
-    static int falhas = 0;
-
-    static void verifica(String descricao, boolean condicao) {
-        if (condicao) {
-            ok++;
-            System.out.println("  [OK] " + descricao);
-        } else {
-            falhas++;
-            System.out.println("  [FALHA] " + descricao);
-        }
-    }
-
-    static boolean lanca(Runnable acao) {
-        try {
-            acao.run();
-            return false;
-        } catch (IllegalStateException e) {
-            System.out.println(
-                    "  (erro esperado: " + e.getMessage() + ")"
-            );
-            return true;
-        }
-    }
-
-    static void fim() {
-        System.out.println(
-                "\nResultado: " + ok + " ok, " + falhas + " falha(s)"
-        );
-
-        if (falhas > 0) {
-            System.exit(1);
-        }
     }
 }

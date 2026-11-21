@@ -19,7 +19,7 @@ public class teste05 extends Db {
         }
         long c1 = cliente("C1"), c2 = cliente("C2"), c3 = cliente("C3");
 
-        agendar(c1, ana, "2026-11-20 10:00", corte, escova);      // Ana 10:00-11:00
+        agendar(c1, ana, "2026-11-20 10:00", corte, escova);
         verifica("Fim calculado pelos itens = 11:00",
                 "2026-11-20 11:00:00".equals(texto(
                         "SELECT fim::text FROM agendamento WHERE id_profissional = ?", ana)));
