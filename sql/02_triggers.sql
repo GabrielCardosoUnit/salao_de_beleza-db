@@ -249,3 +249,21 @@ WHEN (OLD.status = 'CONCLUIDO' AND NEW.status = 'CONCLUIDO'
            OR NEW.inicio IS DISTINCT FROM OLD.inicio
            OR NEW.fim    IS DISTINCT FROM OLD.fim))
 EXECUTE FUNCTION fn_ag_bloqueia_concluido();
+
+
+-- Agendamento cancelado não pode ir direto para CONCLUIDO: geraria
+--    comissão de um atendimento que não aconteceu. Se o cliente veio
+--    mesmo assim, reabra (AGENDADO/CONFIRMADO) e depois conclua; a
+--    reabertura passa de novo pela checagem de expediente e conflito.
+CREATE OR REPLACE FUNCTION fn_ag_cancelado_nao_conclui() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'Agendamento % está CANCELADO; reabra-o antes de concluir',
+        OLD.id_agendamento;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_ag_cancelado_nao_conclui
+BEFORE UPDATE OF status ON agendamento
+FOR EACH ROW
+WHEN (OLD.status = 'CANCELADO' AND NEW.status = 'CONCLUIDO')
+EXECUTE FUNCTION fn_ag_cancelado_nao_conclui();

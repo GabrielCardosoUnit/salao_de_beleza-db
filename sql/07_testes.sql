@@ -121,6 +121,20 @@ SELECT cli, prof, '2026-11-17 11:15', '2026-11-17 11:45', 'teste-reuso' FROM t;
 SELECT pg_temp.confere('horário de agendamento cancelado pode ser reutilizado',
     EXISTS (SELECT 1 FROM agendamento WHERE observacao = 'teste-reuso'));
 
+-- Cancelado não vai direto para CONCLUIDO (horário livre e com item lançado,
+-- para que só a regra de status possa bloquear)
+INSERT INTO agendamento (id_cliente, id_profissional, inicio, fim, observacao)
+SELECT cli, prof, '2026-11-17 16:00', '2026-11-17 16:30', 'teste-cancelado' FROM t;
+INSERT INTO item_agendamento (id_agendamento, id_servico, valor_cobrado)
+SELECT a.id_agendamento, t.corte, NULL FROM agendamento a, t WHERE a.observacao = 'teste-cancelado';
+UPDATE agendamento SET status = 'CANCELADO' WHERE observacao = 'teste-cancelado';
+SELECT pg_temp.espera_erro('cancelado não pode ser concluído',
+    $$UPDATE agendamento SET status = 'CONCLUIDO' WHERE observacao = 'teste-cancelado'$$);
+UPDATE agendamento SET status = 'AGENDADO' WHERE observacao = 'teste-cancelado';
+UPDATE agendamento SET status = 'CONCLUIDO' WHERE observacao = 'teste-cancelado';
+SELECT pg_temp.confere('cancelado reaberto pode ser concluído',
+    (SELECT status FROM agendamento WHERE observacao = 'teste-cancelado') = 'CONCLUIDO');
+
 -- Comissão gerada ao concluir
 UPDATE agendamento SET status = 'CONCLUIDO' WHERE observacao = 'teste-1';
 
